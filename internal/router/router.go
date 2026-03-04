@@ -14,18 +14,18 @@ import (
 )
 
 type Controllers struct {
-	Task       *controllers.TaskController
-	Auth       *controllers.AuthController
-	Env        *controllers.EnvController
-	Script     *controllers.ScriptController
-	Executor   *controllers.ExecutorController
-	File       *controllers.FileController
-	Dashboard  *controllers.DashboardController
-	Log        *controllers.LogController
-	LogWS      *controllers.LogWSController
-	Terminal   *controllers.TerminalController
-	Settings   *controllers.SettingsController
-	Dependency *controllers.DependencyController
+	Task         *controllers.TaskController
+	Auth         *controllers.AuthController
+	Env          *controllers.EnvController
+	Script       *controllers.ScriptController
+	Executor     *controllers.ExecutorController
+	File         *controllers.FileController
+	Dashboard    *controllers.DashboardController
+	Log          *controllers.LogController
+	LogWS        *controllers.LogWSController
+	Terminal     *controllers.TerminalController
+	Settings     *controllers.SettingsController
+	Dependency   *controllers.DependencyController
 	Agent        *controllers.AgentController
 	Mise         *controllers.MiseController
 	Notification *controllers.NotificationController
@@ -286,9 +286,23 @@ func Setup(c *Controllers) *gin.Engine {
 	// SPA 兜底路由 - 返回 index.html（HTML禁用缓存以保证实时同步）
 	// 必须在最后注册，作为兜底路由
 	router.NoRoute(func(ctx *gin.Context) {
+		path := ctx.Request.URL.Path
+
 		// 如果配置了前缀，只处理带前缀的路径
-		if urlPrefix != "" && !strings.HasPrefix(ctx.Request.URL.Path, urlPrefix) {
+		if urlPrefix != "" && !strings.HasPrefix(path, urlPrefix) {
 			ctx.Status(404)
+			return
+		}
+
+		// 解析实际的相对路径
+		relPath := strings.TrimPrefix(path, urlPrefix)
+		if !strings.HasPrefix(relPath, "/") {
+			relPath = "/" + relPath
+		}
+
+		// 拦截属于 API 或静态资源目录下不存在的请求，绝不能返回 index.html 造成前端 MIME 错误
+		if strings.HasPrefix(relPath, "/api/") || strings.HasPrefix(relPath, "/assets/") {
+			ctx.String(404, "Not Found")
 			return
 		}
 
