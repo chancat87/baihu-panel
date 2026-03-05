@@ -57,6 +57,9 @@ COPY . .
 # Copy frontend dist (needed for embedding)
 COPY --from=frontend-builder /app/web/dist ./internal/static/dist
 
+# Generate Swagger
+RUN go run github.com/swaggo/swag/cmd/swag@latest init -g main.go -o ./openapi_docs
+
 # Build Go binary
 RUN VERSION_VAL=$(cat /build-info/version.txt) && \
     BUILD_TIME_VAL=$(cat /build-info/build_time.txt) && \

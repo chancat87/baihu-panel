@@ -62,7 +62,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -126,7 +126,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -142,7 +142,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -172,7 +172,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -224,7 +224,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -240,7 +240,7 @@
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -286,7 +286,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -302,7 +302,7 @@
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -343,7 +343,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     },
                     "409": {
@@ -351,7 +351,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -403,7 +403,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -417,6 +417,177 @@
                                     }
                                 }
                             ]
+                        }
+                    }
+                }
+            }
+        },
+        "/execute/command": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "临时执行单次命令",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务执行"
+                ],
+                "summary": "执行命令",
+                "parameters": [
+                    {
+                        "description": "命令内容 (需包含 command 字段)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ExecutionResultVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/execute/results": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "获取最新任务或命令执行的结果列表",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务执行"
+                ],
+                "summary": "获取最新执行结果",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "数量 (默认 10)",
+                        "name": "count",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/vo.ExecutionResultVO"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/execute/task/{id}": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "立即执行指定的任务",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "任务"
+                ],
+                "summary": "运行任务",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "任务ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "执行参数 (envs: 环境变量字典)",
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/utils.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/vo.ExecutionResultVO"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -478,7 +649,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -541,13 +712,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -586,7 +757,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -602,7 +773,7 @@
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -637,13 +808,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -711,7 +882,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -773,13 +944,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -818,7 +989,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -834,7 +1005,7 @@
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -880,7 +1051,7 @@
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                                    "$ref": "#/definitions/utils.Response"
                                 },
                                 {
                                     "type": "object",
@@ -896,7 +1067,7 @@
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -931,13 +1102,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "$ref": "#/definitions/github_com_engigu_baihu-panel_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -945,18 +1116,6 @@
         }
     },
     "definitions": {
-        "github_com_engigu_baihu-panel_internal_utils.Response": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer"
-                },
-                "data": {},
-                "msg": {
-                    "type": "string"
-                }
-            }
-        },
         "utils.PaginationData": {
             "type": "object",
             "properties": {
@@ -969,6 +1128,18 @@
                 },
                 "total": {
                     "type": "integer"
+                }
+            }
+        },
+        "utils.Response": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "data": {},
+                "msg": {
+                    "type": "string"
                 }
             }
         },
@@ -994,6 +1165,41 @@
                     "type": "string"
                 },
                 "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "vo.ExecutionResultVO": {
+            "type": "object",
+            "properties": {
+                "duration": {
+                    "type": "integer"
+                },
+                "end_time": {
+                    "type": "string"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "exit_code": {
+                    "type": "integer"
+                },
+                "log_id": {
+                    "type": "string"
+                },
+                "output": {
+                    "type": "string"
+                },
+                "start_time": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                },
+                "task_id": {
                     "type": "string"
                 }
             }

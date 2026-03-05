@@ -1,12 +1,15 @@
 package router
 
 import (
+	"encoding/json"
 	"io/fs"
 	"net/http"
 	"strings"
 
+	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/controllers"
 	"github.com/engigu/baihu-panel/internal/middleware"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/static"
 
@@ -85,8 +88,79 @@ func Setup(c *Controllers) *gin.Engine {
 		})
 	}
 
-	// Swagger documentation (带 Basic Auth 认证)
-	root.GET("/swagger/*any", middleware.SwaggerAuth(), ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// OpenAPI documentation using Scalar UI (带 Basic Auth 认证)
+	router.GET("/openapi/*any", func(c *gin.Context) {
+		settingsSvc := services.NewSettingsService()
+		siteConfig := settingsSvc.GetSection(constant.SectionSite)
+		tokenJson := siteConfig[constant.KeyOpenapiToken]
+
+		enabled := false
+		if tokenJson != "" {
+			var tokenConfig vo.TokenConfig
+			if err := json.Unmarshal([]byte(tokenJson), &tokenConfig); err == nil {
+				enabled = tokenConfig.Enabled
+			}
+		}
+
+		// 如果未开启文档，直接返回 404 SPA 页面
+		if !enabled {
+			serveSPA(c, urlPrefix, 404)
+			return
+		}
+
+		// 执行认证
+		middleware.SwaggerAuth()(c)
+		if c.IsAborted() {
+			// 如果认证失败（且被中间件置为 404，如密码错误且我们想要隐藏它）
+			if c.Writer.Status() == 404 {
+				serveSPA(c, urlPrefix, 404)
+			}
+			return
+		}
+
+		// 获取内部路径（移除开头的斜杠）
+		path := strings.TrimPrefix(c.Param("any"), "/")
+
+		// 1. 根路径或空路径 -> 重定向到 index.html
+		if path == "" || path == "/" {
+			c.Redirect(http.StatusMovedPermanently, urlPrefix+"/openapi/index.html")
+			return
+		}
+
+		// 2. 提供 Scalar 渲染的 HTML 页面
+		if path == "index.html" {
+			scalarHTML := `<!doctype html>
+<html>
+  <head>
+    <title>Baihu Panel API Reference</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <script id="api-reference" data-url="` + urlPrefix + `/openapi/doc.json"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  </body>
+</html>`
+			c.Header("Content-Type", "text/html; charset=utf-8")
+			c.String(http.StatusOK, scalarHTML)
+			c.Abort()
+			return
+		}
+
+		// 3. 提供给 Scalar/Swagger 使用的 doc.json 内容
+		if path == "doc.json" {
+			// 这里借助 ginSwagger 仅生成 doc.json 内容
+			h := ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL(urlPrefix+"/openapi/doc.json"))
+			h(c)
+			return
+		}
+
+		// 4. 其余路径一律返回 SPA 的 404
+		serveSPA(c, urlPrefix, 404)
+	})
 
 	// API 路由组
 	api := root.Group("/api/v1")
@@ -199,6 +273,7 @@ func Setup(c *Controllers) *gin.Engine {
 				settings.GET("/site", c.Settings.GetSiteSettings)
 				settings.PUT("/site", c.Settings.UpdateSiteSettings)
 				settings.POST("/site/api-token/generate", c.Settings.GenerateApiToken)
+				settings.POST("/site/openapi-token/generate", c.Settings.GenerateOpenapiToken)
 				settings.GET("/paths", c.Settings.GetPaths)
 				settings.GET("/scheduler", c.Settings.GetSchedulerSettings)
 				settings.PUT("/scheduler", c.Settings.UpdateSchedulerSettings)
@@ -314,21 +389,34 @@ func Setup(c *Controllers) *gin.Engine {
 			return
 		}
 
-		data, err := static.ReadFile("index.html")
-		if err != nil {
-			ctx.Status(404)
-			return
-		}
-
-		html := string(data)
-
-		// 注入配置变量供前端使用（API 调用和路由）
-		configScript := `<script>window.__BASE_URL__ = "` + urlPrefix + `"; window.__API_VERSION__ = "/api/v1";</script>`
-		html = strings.Replace(html, "</head>", configScript+"</head>", 1)
-
-		ctx.Header("Cache-Control", "no-cache, no-store, must-revalidate")
-		ctx.Data(200, "text/html; charset=utf-8", []byte(html))
+		serveSPA(ctx, urlPrefix, 200)
 	})
 
 	return router
+}
+
+// serveSPA 注入配置并返回 index.html 给前端渲染
+func serveSPA(ctx *gin.Context, urlPrefix string, status int) {
+	data, err := static.ReadFile("index.html")
+	if err != nil {
+		// 如果读不到 index.html (如 dev 模式未 build)，返回基础 HTML 触发前端路由
+		fallback := `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>404 Not Found</title></head><body>
+			<script>window.location.href = (window.__BASE_URL__ || "/") + "404";</script>
+			<p>Not Found. Redirecting to home...</p>
+			</body></html>`
+		ctx.Header("Content-Type", "text/html; charset=utf-8")
+		ctx.Data(status, "text/html", []byte(fallback))
+		ctx.Abort()
+		return
+	}
+
+	html := string(data)
+
+	// 注入配置变量供前端使用（API 调用和路由）
+	configScript := `<script>window.__BASE_URL__ = "` + urlPrefix + `"; window.__API_VERSION__ = "/api/v1";</script>`
+	html = strings.Replace(html, "</head>", configScript+"</head>", 1)
+
+	ctx.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	ctx.Data(status, "text/html; charset=utf-8", []byte(html))
+	ctx.Abort()
 }

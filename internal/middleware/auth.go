@@ -8,6 +8,7 @@ import (
 	"github.com/engigu/baihu-panel/internal/constant"
 	"github.com/engigu/baihu-panel/internal/database"
 	"github.com/engigu/baihu-panel/internal/models"
+	"github.com/engigu/baihu-panel/internal/models/vo"
 	"github.com/engigu/baihu-panel/internal/services"
 	"github.com/engigu/baihu-panel/internal/utils"
 
@@ -20,6 +21,11 @@ func AuthRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 校验 API Token (实验特性)
 		if checkApiToken(c, settingsSvc) {
+			return
+		}
+
+		// 校验 OpenAPI Token
+		if checkOpenapiToken(c, settingsSvc) {
 			return
 		}
 
@@ -69,20 +75,19 @@ func checkApiToken(c *gin.Context, settingsSvc *services.SettingsService) bool {
 		return false
 	}
 
-	var tokenData map[string]string
-	if err := json.Unmarshal([]byte(tokenJson), &tokenData); err != nil {
+	var tokenConfig vo.TokenConfig
+	if err := json.Unmarshal([]byte(tokenJson), &tokenConfig); err != nil {
 		return false
 	}
 
-	expectedToken, ok := tokenData["token"]
-	if !ok || expectedToken == "" || apiToken != expectedToken {
+	if tokenConfig.Token == "" || apiToken != tokenConfig.Token {
 		return false
 	}
 
 	// 检查过期时间
-	if expireStr, ok := tokenData["expire_at"]; ok && expireStr != "" {
+	if tokenConfig.ExpireAt != "" {
 		// 前端传来的时间格式是 YYYY-MM-DD，使用 2006-01-02 解析
-		expireDate, err := time.Parse("2006-01-02", expireStr)
+		expireDate, err := time.Parse("2006-01-02", tokenConfig.ExpireAt)
 		if err == nil {
 			// 将过期时间设为当天的 23:59:59
 			expireDate = expireDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
@@ -99,7 +104,61 @@ func checkApiToken(c *gin.Context, settingsSvc *services.SettingsService) bool {
 		c.Abort()
 		return true // 返回 true 表示中间件已处理并截断了请求
 	}
-	
+
+	c.Set("userID", adminUser.ID)
+	c.Set("username", adminUser.Username)
+	c.Next()
+	return true
+}
+
+// checkOpenapiToken 校验 OpenAPI Token
+// 返回 true 表示校验通过并已放行请求
+func checkOpenapiToken(c *gin.Context, settingsSvc *services.SettingsService) bool {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" || len(authHeader) < 8 || authHeader[:7] != "Bearer " {
+		return false
+	}
+	openapiToken := authHeader[7:]
+
+	siteConfig := settingsSvc.GetSection(constant.SectionSite)
+	tokenJson, ok := siteConfig[constant.KeyOpenapiToken]
+	if !ok || tokenJson == "" {
+		return false
+	}
+
+	var tokenConfig vo.TokenConfig
+	if err := json.Unmarshal([]byte(tokenJson), &tokenConfig); err != nil {
+		return false
+	}
+
+	// 校验开启状态
+	if !tokenConfig.Enabled {
+		return false
+	}
+
+	if tokenConfig.Token == "" || openapiToken != tokenConfig.Token {
+		return false
+	}
+
+	// 检查过期时间
+	if tokenConfig.ExpireAt != "" {
+		expireDate, err := time.Parse("2006-01-02", tokenConfig.ExpireAt)
+		if err == nil {
+			expireDate = expireDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+			if time.Now().After(expireDate) {
+				return false
+			}
+		}
+	}
+
+	// 模拟 Admin 角色
+	var adminUser models.User
+	if err := database.DB.Where("role = ?", "admin").First(&adminUser).Error; err != nil {
+		utils.Unauthorized(c, "未找到管理员账户，OpenAPI Token 校验失败")
+		c.Abort()
+		return true
+	}
+
 	c.Set("userID", adminUser.ID)
 	c.Set("username", adminUser.Username)
 	c.Next()
@@ -119,22 +178,47 @@ func ClearAuthCookie(c *gin.Context) {
 
 // SwaggerAuth Swagger 认证中间件 (Basic Auth)
 func SwaggerAuth() gin.HandlerFunc {
+	settingsSvc := services.NewSettingsService()
 	return func(c *gin.Context) {
-		cfg := services.GetConfig()
-		if !cfg.Swagger.Enabled {
-			c.Status(404)
+		siteConfig := settingsSvc.GetSection(constant.SectionSite)
+		tokenJson, ok := siteConfig[constant.KeyOpenapiToken]
+		if !ok || tokenJson == "" {
+			c.Status(http.StatusNotFound)
 			c.Abort()
 			return
 		}
 
-		user, password, hasAuth := c.Request.BasicAuth()
-		if hasAuth && user == cfg.Swagger.User && password == cfg.Swagger.Password {
+		var tokenConfig vo.TokenConfig
+		if err := json.Unmarshal([]byte(tokenJson), &tokenConfig); err != nil {
+			c.Status(http.StatusNotFound)
+			c.Abort()
+			return
+		}
+
+		// 必须开启鉴权开关
+		if !tokenConfig.Enabled {
+			c.Status(http.StatusNotFound)
+			c.Abort()
+			return
+		}
+
+		_, password, hasAuth := c.Request.BasicAuth()
+		// 允许使用任意用户名，但密码必须匹配 OpenAPI Token
+		if hasAuth && password == tokenConfig.Token && tokenConfig.Token != "" {
 			c.Next()
 			return
 		}
 
-		c.Header("WWW-Authenticate", `Basic realm="restricted"`)
-		c.Status(http.StatusUnauthorized)
+		// 认证失败，提示输入密码 (如果未提供认证)
+		if !hasAuth {
+			c.Header("WWW-Authenticate", `Basic realm="OpenAPI Access Token (Any username)"`)
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+
+		// 认证失败 (密码错误)，返回 404 隐藏路由
+		c.Status(http.StatusNotFound)
 		c.Abort()
 	}
 }

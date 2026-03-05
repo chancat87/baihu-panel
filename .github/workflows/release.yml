@@ -29,6 +29,9 @@ jobs:
       - name: Build Web
         run: make build-web
 
+      - name: Generate Swagger
+        run: make swag
+
       - name: Build Binaries
         run: |
           VERSION=${{ github.ref_name }}

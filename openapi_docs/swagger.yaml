@@ -1,13 +1,5 @@
 basePath: /api/v1
 definitions:
-  github_com_engigu_baihu-panel_internal_utils.Response:
-    properties:
-      code:
-        type: integer
-      data: {}
-      msg:
-        type: string
-    type: object
   utils.PaginationData:
     properties:
       list: {}
@@ -17,6 +9,14 @@ definitions:
         type: integer
       total:
         type: integer
+    type: object
+  utils.Response:
+    properties:
+      code:
+        type: integer
+      data: {}
+      msg:
+        type: string
     type: object
   vo.EnvVO:
     properties:
@@ -33,6 +33,29 @@ definitions:
       updated_at:
         type: string
       value:
+        type: string
+    type: object
+  vo.ExecutionResultVO:
+    properties:
+      duration:
+        type: integer
+      end_time:
+        type: string
+      error:
+        type: string
+      exit_code:
+        type: integer
+      log_id:
+        type: string
+      output:
+        type: string
+      start_time:
+        type: string
+      status:
+        type: string
+      success:
+        type: boolean
+      task_id:
         type: string
     type: object
   vo.TaskLogVO:
@@ -156,7 +179,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   allOf:
@@ -191,7 +214,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   $ref: '#/definitions/vo.EnvVO'
@@ -199,7 +222,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 创建环境变量
@@ -226,12 +249,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
         "409":
           description: 引用冲突
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   items:
@@ -260,7 +283,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   $ref: '#/definitions/vo.EnvVO'
@@ -268,7 +291,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 获取环境变量详情
@@ -297,7 +320,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   $ref: '#/definitions/vo.EnvVO'
@@ -305,7 +328,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 更新环境变量
@@ -329,7 +352,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   items:
@@ -353,7 +376,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   items:
@@ -365,6 +388,105 @@ paths:
       summary: 获取所有环境变量
       tags:
       - 环境变量
+  /execute/command:
+    post:
+      consumes:
+      - application/json
+      description: 临时执行单次命令
+      parameters:
+      - description: 命令内容 (需包含 command 字段)
+        in: body
+        name: body
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ExecutionResultVO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 执行命令
+      tags:
+      - 任务执行
+  /execute/results:
+    get:
+      consumes:
+      - application/json
+      description: 获取最新任务或命令执行的结果列表
+      parameters:
+      - description: 数量 (默认 10)
+        in: query
+        name: count
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/vo.ExecutionResultVO'
+                  type: array
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取最新执行结果
+      tags:
+      - 任务执行
+  /execute/task/{id}:
+    post:
+      consumes:
+      - application/json
+      description: 立即执行指定的任务
+      parameters:
+      - description: 任务ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: '执行参数 (envs: 环境变量字典)'
+        in: body
+        name: body
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/utils.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/vo.ExecutionResultVO'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: 运行任务
+      tags:
+      - 任务
   /logs:
     get:
       consumes:
@@ -398,7 +520,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   allOf:
@@ -432,11 +554,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 删除日志
@@ -459,7 +581,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   $ref: '#/definitions/vo.TaskLogVO'
@@ -467,7 +589,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 获取日志详情
@@ -490,11 +612,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 清空日志
@@ -537,7 +659,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   allOf:
@@ -571,11 +693,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 删除任务
@@ -598,7 +720,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   $ref: '#/definitions/vo.TaskVO'
@@ -606,7 +728,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 获取任务详情
@@ -635,7 +757,7 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
                   $ref: '#/definitions/vo.TaskVO'
@@ -643,7 +765,7 @@ paths:
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 更新任务
@@ -666,11 +788,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/github_com_engigu_baihu-panel_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       security:
       - ApiKeyAuth: []
       summary: 停止任务

@@ -111,7 +111,7 @@ deps:
 
 # Generate swagger documentation
 swag:
-	go run github.com/swaggo/swag/cmd/swag@latest init -g main.go -o ./docs
+	go run github.com/swaggo/swag/cmd/swag@latest init -g main.go -o ./openapi_docs
 
 # Docker build
 docker-build:

@@ -133,6 +133,7 @@ export const api = {
     updateSite: (data: SiteSettings) =>
       request('/settings/site', { method: 'PUT', body: JSON.stringify(data) }),
     generateApiToken: () => request<{ token: string }>('/settings/site/api-token/generate', { method: 'POST' }),
+    generateOpenapiToken: () => request<{ token: string }>('/settings/site/openapi-token/generate', { method: 'POST' }),
     getScheduler: () => request<SchedulerSettings>('/settings/scheduler'),
     updateScheduler: (data: SchedulerSettings) =>
       request('/settings/scheduler', { method: 'PUT', body: JSON.stringify(data) }),
@@ -431,6 +432,9 @@ export interface SiteSettings {
   icon: string
   page_size: string
   cookie_days: string
+  openapi_enabled?: boolean
+  openapi_token?: string
+  openapi_token_expire?: string
   api_token?: string
   api_token_expire?: string
 }
