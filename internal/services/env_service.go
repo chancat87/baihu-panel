@@ -37,6 +37,12 @@ func (es *EnvService) GetEnvVarsByUserID(userID string) []models.EnvironmentVari
 	return envs
 }
 
+// GetFormattedEnvVarsByUserID 获取用户环境变量并格式化为 NAME=VALUE 格式（支持重名合并）
+func (es *EnvService) GetFormattedEnvVarsByUserID(userID string) []string {
+	envs := es.GetEnvVarsByUserID(userID)
+	return es.formatEnvVars(envs)
+}
+
 func (es *EnvService) GetEnvVarsWithPagination(userID string, name string, page, pageSize int) ([]models.EnvironmentVariable, int64) {
 	var envs []models.EnvironmentVariable
 	var total int64

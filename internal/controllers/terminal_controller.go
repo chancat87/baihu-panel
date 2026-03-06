@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -116,11 +115,9 @@ func (tc *TerminalController) handlePtyMode(conn *websocket.Conn, userID string)
 		cmd.Env = append(cmd.Env, "PATH="+pathStr)
 	}
 
-	// 注入环境变量
-	envVars := tc.envService.GetEnvVarsByUserID(userID)
-	for _, env := range envVars {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", env.Name, env.Value))
-	}
+	// 注入环境变量（支持同名合并）
+	envVars := tc.envService.GetFormattedEnvVarsByUserID(userID)
+	cmd.Env = append(cmd.Env, envVars...)
 
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
@@ -191,10 +188,9 @@ func (tc *TerminalController) handlePipeMode(conn *websocket.Conn, userID string
 		cmd.Env = append(cmd.Env, "PATH="+pathStr)
 	}
 
-	envVars := tc.envService.GetEnvVarsByUserID(userID)
-	for _, env := range envVars {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", env.Name, env.Value))
-	}
+	// 注入环境变量（支持同名合并）
+	envVars := tc.envService.GetFormattedEnvVarsByUserID(userID)
+	cmd.Env = append(cmd.Env, envVars...)
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
