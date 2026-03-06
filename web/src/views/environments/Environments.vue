@@ -34,10 +34,10 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 async function loadEnvVars() {
   try {
     const res = await api.env.list({ page: currentPage.value, page_size: pageSize.value, name: filterName.value || undefined })
-    envVars.value = res.list
+    envVars.value = res.data
     total.value = res.total
     // 初始化显示状态，根据数据库的 hidden 状态同步显示
-    res.list.forEach(env => {
+    res.data.forEach(env => {
       showValues.value[env.id] = !env.hidden
     })
   } catch { toast.error('加载环境变量失败') }

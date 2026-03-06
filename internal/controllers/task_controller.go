@@ -118,7 +118,7 @@ func (tc *TaskController) CreateTask(c *gin.Context) {
 // @Param type query string false "任务类型"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.Response{data=utils.PaginationData{list=[]vo.TaskVO}}
+// @Success 200 {object} utils.Response{data=utils.PaginationData{data=[]vo.TaskVO}}
 // @Router /tasks [get]
 func (tc *TaskController) GetTasks(c *gin.Context) {
 	p := utils.ParsePagination(c)

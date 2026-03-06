@@ -62,7 +62,7 @@ func (ec *EnvController) CreateEnvVar(c *gin.Context) {
 // @Param name query string false "按名称模糊查询"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.Response{data=utils.PaginationData{list=[]vo.EnvVO}}
+// @Success 200 {object} utils.Response{data=utils.PaginationData{data=[]vo.EnvVO}}
 // @Router /env [get]
 func (ec *EnvController) GetEnvVars(c *gin.Context) {
 	userID := c.GetString("userID")

@@ -76,7 +76,7 @@ async function loadLogs() {
       params.status = filterStatus.value
     }
     const response = await api.logs.list(params)
-    logs.value = response.list
+    logs.value = response.data
     total.value = response.total
   } catch {
     toast.error('加载日志失败')

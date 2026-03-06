@@ -28,7 +28,7 @@ func NewLogController() *LogController {
 // @Param status query string false "状态"
 // @Param page query int false "页码"
 // @Param page_size query int false "每页数量"
-// @Success 200 {object} utils.Response{data=utils.PaginationData{list=[]vo.TaskLogVO}}
+// @Success 200 {object} utils.Response{data=utils.PaginationData{data=[]vo.TaskLogVO}}
 // @Router /logs [get]
 func (lc *LogController) GetLogs(c *gin.Context) {
 	p := utils.ParsePagination(c)

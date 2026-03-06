@@ -81,7 +81,7 @@ async function loadLogs() {
       page_size: pageSize.value,
       username: filterUsername.value || undefined
     })
-    logs.value = res.list
+    logs.value = res.data
     total.value = res.total
   } catch {
     toast.error('加载登录日志失败')

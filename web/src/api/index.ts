@@ -344,7 +344,7 @@ export interface ExecutionResult {
 }
 
 export interface TaskListResponse {
-  list: Task[]
+  data: Task[]
   total: number
   page: number
   page_size: number
@@ -365,7 +365,7 @@ export interface EnvVar {
 }
 
 export interface EnvListResponse {
-  list: EnvVar[]
+  data: EnvVar[]
   total: number
   page: number
   page_size: number
@@ -396,7 +396,7 @@ export interface TaskLog {
 }
 
 export interface LogListResponse {
-  list: TaskLog[]
+  data: TaskLog[]
   total: number
   page: number
   page_size: number
@@ -457,7 +457,7 @@ export interface LoginLog {
 }
 
 export interface LoginLogListResponse {
-  list: LoginLog[]
+  data: LoginLog[]
   total: number
   page: number
   page_size: number

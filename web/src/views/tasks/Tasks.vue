@@ -74,7 +74,7 @@ async function loadTasks() {
       type: filterType.value === 'all' ? undefined : filterType.value,
       agent_id: filterAgentId.value || undefined
     })
-    tasks.value = res.list
+    tasks.value = res.data
     total.value = res.total
   } catch { toast.error('加载任务失败') }
 }

@@ -330,11 +330,11 @@ func (sc *SettingsController) GetLoginLogs(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"data":      vo.ToLoginLogVOListFromModels(logs),
-		"total":     total,
-		"page":      page,
-		"page_size": pageSize,
+	utils.Success(c, utils.PaginationData{
+		Data:     vo.ToLoginLogVOListFromModels(logs),
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
 	})
 }
 
