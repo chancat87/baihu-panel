@@ -3,7 +3,18 @@ import { ref, onMounted } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import Pagination from '@/components/Pagination.vue'
-import { RefreshCw, Search, Loader2 } from 'lucide-vue-next'
+import { RefreshCw, Search, Loader2, Trash2 } from 'lucide-vue-next'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { LOG_CATEGORY } from '@/api'
 import TextOverflow from '@/components/TextOverflow.vue'
 import { api } from '@/api'
 import { toast } from 'vue-sonner'
@@ -48,6 +59,7 @@ const filterUsername = ref('')
 const currentPage = ref(1)
 const total = ref(0)
 const loading = ref(false)
+const showClearConfirm = ref(false)
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
 // IP 地理位置弹窗
@@ -103,6 +115,17 @@ function handlePageChange(page: number) {
     loadLogs()
 }
 
+async function handleClear() {
+    try {
+        await api.appLogs.clear(LOG_CATEGORY.LOGIN_LOG)
+        toast.success('清空成功')
+        currentPage.value = 1
+        loadLogs()
+    } catch (e: any) {
+        toast.error('清空失败: ' + (e.message || ''))
+    }
+}
+
 onMounted(loadLogs)
 </script>
 
@@ -115,9 +138,34 @@ onMounted(loadLogs)
                     <Input v-model="filterUsername" placeholder="搜索用户名..." class="h-9 pl-9 w-full sm:w-56 text-sm"
                         @input="handleSearch" />
                 </div>
-                <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadLogs" :disabled="loading">
-                    <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
-                </Button>
+                <div class="flex items-center gap-2">
+                    <Button variant="outline" size="icon" class="h-9 w-9 shrink-0" @click="loadLogs" :disabled="loading"
+                        title="刷新">
+                        <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
+                    </Button>
+                    <AlertDialog :open="showClearConfirm" @update:open="showClearConfirm = $event">
+                        <Button variant="outline"
+                            class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+                            @click="showClearConfirm = true">
+                            <Trash2 class="h-4 w-4 sm:mr-2" /> <span class="hidden sm:inline"
+                                style="padding-left: 2px;">清空记录</span>
+                        </Button>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>确认清空所有登录日志？</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    此操作将永久清空所有记录，操作后无法恢复。确认要继续吗？
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>取消</AlertDialogCancel>
+                                <AlertDialogAction @click="handleClear" variant="destructive">
+                                    确认清空
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
         </div>
 
@@ -139,7 +187,7 @@ onMounted(loadLogs)
                 <div v-for="log in logs" :key="log.id"
                     class="flex items-center gap-2 sm:gap-4 px-3 sm:px-4 py-2 hover:bg-muted/50 transition-colors">
                     <span class="w-16 sm:w-24 shrink-0 font-medium text-xs sm:text-sm truncate">{{ log.username
-                        }}</span>
+                    }}</span>
                     <code
                         class="w-20 sm:w-32 shrink-0 text-xs text-muted-foreground bg-muted px-1 sm:px-2 py-0.5 sm:py-1 rounded truncate cursor-pointer hover:bg-muted/80 transition-colors"
                         @click="showIpInfo(log.ip)">{{ log.ip }}</code>
@@ -151,7 +199,7 @@ onMounted(loadLogs)
                         <TextOverflow :text="log.user_agent || '-'" title="User Agent" />
                     </span>
                     <span class="shrink-0 sm:w-40 sm:text-right text-xs text-muted-foreground">{{ log.created_at
-                        }}</span>
+                    }}</span>
                 </div>
             </div>
             <!-- 分页 -->

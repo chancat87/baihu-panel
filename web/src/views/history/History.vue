@@ -385,7 +385,7 @@ watch(() => route.query, (newQuery) => {
             <!-- 小屏行 -->
             <div class="flex sm:hidden items-center gap-2 px-3 py-2">
               <span class="w-14 shrink-0 text-muted-foreground text-xs">#{{ total - (currentPage - 1) * pageSize - index
-                }}</span>
+              }}</span>
               <span class="w-6 shrink-0 flex justify-center" :title="getTaskTypeTitle(log.task_type || 'task')">
                 <GitBranch v-if="log.task_type === TASK_TYPE.REPO" class="h-3.5 w-3.5 text-primary" />
                 <Terminal v-else class="h-3.5 w-3.5 text-primary" />
@@ -418,7 +418,7 @@ watch(() => route.query, (newQuery) => {
                 </div>
               </span>
               <span class="w-12 text-right shrink-0 text-muted-foreground text-xs">{{ formatDuration(log.duration)
-                }}</span>
+              }}</span>
               <span class="w-8 shrink-0 flex justify-center opacity-100">
                 <Button variant="ghost" size="icon"
                   class="h-6 w-6 text-muted-foreground hover:text-destructive shrink-0"
@@ -430,7 +430,7 @@ watch(() => route.query, (newQuery) => {
             <!-- 大屏行 -->
             <div class="hidden sm:flex items-center gap-4 px-4 py-2">
               <span class="w-16 shrink-0 text-muted-foreground text-sm">#{{ total - (currentPage - 1) * pageSize - index
-                }}</span>
+              }}</span>
               <span class="w-10 shrink-0 flex justify-center" :title="getTaskTypeTitle(log.task_type || 'task')">
                 <GitBranch v-if="log.task_type === TASK_TYPE.REPO" class="h-4 w-4 text-primary" />
                 <Terminal v-else class="h-4 w-4 text-primary" />
@@ -466,7 +466,7 @@ watch(() => route.query, (newQuery) => {
                 </div>
               </span>
               <span class="w-16 text-right shrink-0 text-muted-foreground text-xs">{{ formatDuration(log.duration)
-                }}</span>
+              }}</span>
               <span v-if="!selectedLog"
                 class="w-40 text-right shrink-0 text-muted-foreground text-xs hidden md:block">{{ log.start_time ||
                   log.created_at }}</span>
@@ -588,8 +588,7 @@ watch(() => route.query, (newQuery) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction @click="handleClearLogs"
-            class="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:text-white dark:hover:bg-red-700">
+          <AlertDialogAction @click="handleClearLogs" variant="destructive">
             清空
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -607,8 +606,7 @@ watch(() => route.query, (newQuery) => {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction @click="handleDeleteLog"
-            class="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:text-white dark:hover:bg-red-700">
+          <AlertDialogAction @click="handleDeleteLog" variant="destructive">
             删除
           </AlertDialogAction>
         </AlertDialogFooter>

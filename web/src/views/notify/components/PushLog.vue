@@ -23,6 +23,16 @@ import { format } from 'date-fns'
 import {
   RefreshCw, Trash2, Check, X, Search
 } from 'lucide-vue-next'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useSiteSettings } from '@/composables/useSiteSettings'
 
 
@@ -32,6 +42,7 @@ const logs = ref<AppLog[]>([])
 const selectedLogId = ref<string | null>(null)
 const total = ref(0)
 const loading = ref(false)
+const showClearConfirm = ref(false)
 
 const filters = ref({
   status: 'all',
@@ -172,11 +183,27 @@ function onDialogClose(open: boolean) {
           <RefreshCw class="h-4 w-4" :class="{ 'animate-spin': loading }" />
         </Button>
       </div>
-      <Button variant="outline"
-        class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
-        @click="handleClear">
-        <Trash2 class="h-4 w-4 sm:mr-2" /> <span class="hidden sm:inline" style="padding-left: 2px;">清空记录</span>
-      </Button>
+      <AlertDialog :open="showClearConfirm" @update:open="showClearConfirm = $event">
+        <Button variant="outline"
+          class="h-9 px-4 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/20"
+          @click="showClearConfirm = true">
+          <Trash2 class="h-4 w-4 sm:mr-2" /> <span class="hidden sm:inline" style="padding-left: 2px;">清空记录</span>
+        </Button>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认清空所有推送日志？</AlertDialogTitle>
+            <AlertDialogDescription>
+              此操作将永久清空当前分类下的所有消息推送历史记录，操作后无法恢复。确认要继续吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction @click="handleClear" variant="destructive">
+              确认清空
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
     <div class="rounded-lg border bg-card overflow-x-auto">

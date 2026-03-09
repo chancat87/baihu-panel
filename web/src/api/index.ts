@@ -601,7 +601,8 @@ export interface AppLogListResponse {
 
 export const LOG_CATEGORY = {
   SYSTEM_NOTICE: 'system_notice',
-  PUSH_LOG: 'push_log'
+  PUSH_LOG: 'push_log',
+  LOGIN_LOG: 'login_log'
 } as const
 
 export const LOG_LEVEL = {
