@@ -14,8 +14,19 @@ import '@scalar/api-reference/style.css'
         spec: { 
           url: '/baihu-panel/swagger.json' 
         },
-        theme: 'purple',
-        showSidebar: true
+        theme: 'alternate',
+        showSidebar: true,
+        servers: [
+          { 
+            url: '{protocol}://{host}:{port}/open2api/v1',
+            description: '可编辑的服务器地址',
+            variables: {
+              protocol: { default: 'http', enum: ['http', 'https'] },
+              host: { default: 'localhost' },
+              port: { default: '8052' }
+            }
+          }
+        ]
       }" 
     />
   </ClientOnly>
