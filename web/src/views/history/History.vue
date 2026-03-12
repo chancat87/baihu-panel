@@ -570,10 +570,10 @@ watch(() => route.query, (newQuery) => {
               <Maximize2 class="h-3.5 w-3.5" />
             </Button>
           </div>
-          <div class="flex-1 overflow-auto bg-muted/5 min-h-[160px]">
+          <div class="flex-1 overflow-auto bg-zinc-950 min-h-[160px]">
             <pre
-              class="p-4 text-xs font-mono whitespace-pre-wrap break-all log-pre leading-relaxed" v-html="renderedOutput"></pre>
-            <div v-if="isWsLoading" class="p-4 text-sm text-muted-foreground italic">连接中...</div>
+              class="p-4 text-xs font-mono whitespace-pre-wrap break-all log-pre leading-relaxed text-zinc-300" v-html="renderedOutput"></pre>
+            <div v-if="isWsLoading" class="p-4 text-sm text-zinc-500 italic">连接中...</div>
           </div>
         </div>
       </div>

@@ -87,8 +87,8 @@ onUnmounted(() => {
             </Button>
           </div>
         </div>
-        <div class="flex-1 overflow-auto bg-black/5 dark:bg-white/5">
-          <pre class="p-3 sm:p-4 text-xs font-mono whitespace-pre-wrap break-all" v-html="highlightedContent"></pre>
+        <div class="flex-1 overflow-auto bg-zinc-950">
+          <pre class="p-3 sm:p-4 text-xs font-mono whitespace-pre-wrap break-all text-zinc-300" v-html="highlightedContent"></pre>
         </div>
       </div>
     </div>
