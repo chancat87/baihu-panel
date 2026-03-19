@@ -277,6 +277,10 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 				if string(existing.Config) == "" || string(existing.Config) == "{}" {
 					existing.Config = models.BigText(defaultTaskConfig)
 				}
+				// 默认开启按条数清理30条
+				if existing.CleanConfig == "" {
+					existing.CleanConfig = `{"type":"count","keep":30}`
+				}
 				database.DB.Save(&existing)
 				
 				if existing.Enabled && es != nil {
@@ -299,6 +303,7 @@ func ParseRepoScriptsAndAddCron(es *ExecutorService, repoTask *models.Task) {
 					WorkDir:     displayWorkDir,
 					SourceID:    sourceID,
 					RepoTaskID:  repoTask.ID,
+					CleanConfig: `{"type":"count","keep":30}`,
 				}
 				newTask.ID = utils.GenerateID()
 				database.DB.Create(newTask)
