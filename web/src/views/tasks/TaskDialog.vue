@@ -55,7 +55,7 @@ const concurrency = ref(0)
 const concurrencyEnabled = ref(false)
 const allEnvsEnabled = ref(false)
 const SCRIPTS_DIR_PLACEHOLDER = '$SCRIPTS_DIR$'
-const scriptsDir = ref(PATHS.SCRIPTS_DIR)
+const scriptsDir = ref<string>(PATHS.SCRIPTS_DIR)
 
 const cronDescription = computed(() => {
   if (!form.value.schedule) return ''
