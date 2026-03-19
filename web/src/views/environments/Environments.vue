@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +25,11 @@ const showDeleteDialog = ref(false)
 const deleteEnvId = ref<string | null>(null)
 const associatedTasks = ref<any[]>([])
 const isDeleting = ref(false)
+const valueTextareaRef = ref<HTMLTextAreaElement | null>(null)
+const lineNumbersRef = ref<HTMLDivElement | null>(null)
+const lineMeasureRef = ref<HTMLDivElement | null>(null)
+const visualLineNumbers = ref<string[]>(['1'])
+let textareaResizeObserver: ResizeObserver | null = null
 
 const filterName = ref('')
 const currentPage = ref(1)
@@ -64,12 +69,51 @@ function openCreate() {
   editingEnv.value = { name: '', value: '', remark: '', hidden: true, enabled: true }
   isEdit.value = false
   showDialog.value = true
+  void updateVisualLineNumbers()
 }
 
 function openEdit(env: EnvVar) {
   editingEnv.value = { ...env }
   isEdit.value = true
   showDialog.value = true
+  void updateVisualLineNumbers()
+}
+
+function syncValueLineNumbers() {
+  if (!valueTextareaRef.value || !lineNumbersRef.value) return
+  lineNumbersRef.value.scrollTop = valueTextareaRef.value.scrollTop
+}
+
+async function updateVisualLineNumbers() {
+  await nextTick()
+
+  const textarea = valueTextareaRef.value
+  const measure = lineMeasureRef.value
+  if (!textarea || !measure) return
+
+  const style = window.getComputedStyle(textarea)
+  const lineHeight = Number.parseFloat(style.lineHeight) || Number.parseFloat(style.fontSize) * 1.5 || 24
+  const lines = String(editingEnv.value?.value ?? '').split('\n')
+
+  measure.style.width = `${textarea.clientWidth}px`
+  measure.innerHTML = ''
+
+  const nextLineNumbers: string[] = []
+  lines.forEach((line, index) => {
+    const lineEl = document.createElement('div')
+    lineEl.className = 'break-all whitespace-pre-wrap'
+    lineEl.textContent = line || ' '
+    measure.appendChild(lineEl)
+
+    const visualRows = Math.max(1, Math.round(lineEl.getBoundingClientRect().height / lineHeight))
+    nextLineNumbers.push(String(index + 1))
+    for (let i = 1; i < visualRows; i += 1) {
+      nextLineNumbers.push('\u00A0')
+    }
+  })
+
+  visualLineNumbers.value = nextLineNumbers.length > 0 ? nextLineNumbers : ['1']
+  syncValueLineNumbers()
 }
 
 async function saveEnv() {
@@ -129,6 +173,25 @@ watch(showDeleteDialog, (val) => {
   }
 })
 
+watch(() => editingEnv.value.value, () => {
+  void updateVisualLineNumbers()
+})
+
+watch(showDialog, async (val) => {
+  if (val) {
+    await updateVisualLineNumbers()
+    if (valueTextareaRef.value) {
+      textareaResizeObserver?.disconnect()
+      textareaResizeObserver = new ResizeObserver(() => {
+        void updateVisualLineNumbers()
+      })
+      textareaResizeObserver.observe(valueTextareaRef.value)
+    }
+  } else {
+    textareaResizeObserver?.disconnect()
+  }
+})
+
 function toggleShow(id: string) {
   showValues.value[id] = !showValues.value[id]
 }
@@ -148,6 +211,10 @@ function maskValue(value: string) {
 }
 
 onMounted(loadEnvVars)
+
+onBeforeUnmount(() => {
+  textareaResizeObserver?.disconnect()
+})
 </script>
 
 <template>
@@ -220,22 +287,45 @@ onMounted(loadEnvVars)
     </div>
 
     <Dialog v-model:open="showDialog">
-      <DialogContent class="max-w-md" @openAutoFocus.prevent>
+      <DialogContent class="w-[calc(100vw-2rem)] max-w-md min-w-0">
         <DialogHeader>
           <DialogTitle>{{ isEdit ? '编辑变量' : '新建变量' }}</DialogTitle>
+          <DialogDescription class="sr-only">编辑环境变量的名称、值、备注以及启用和隐藏状态。</DialogDescription>
         </DialogHeader>
-        <div class="space-y-4 py-2">
-          <div class="space-y-2">
+        <div class="space-y-4 py-2 min-w-0">
+          <div class="space-y-2 min-w-0">
             <Label>变量名</Label>
-            <Input v-model="editingEnv.name" class="font-mono" placeholder="MY_VAR" />
+            <Input v-model="editingEnv.name" class="w-full min-w-0 font-mono" placeholder="MY_VAR" />
           </div>
-          <div class="space-y-2">
+          <div class="space-y-2 min-w-0">
             <Label>变量值</Label>
-            <Textarea v-model="editingEnv.value" class="font-mono" placeholder="value" rows="5" />
+            <div class="relative flex min-w-0 overflow-hidden rounded-md border border-input bg-transparent shadow-xs focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px]">
+              <div ref="lineNumbersRef" class="flex max-h-40 w-6 shrink-0 flex-col overflow-hidden border-r border-border bg-muted/30 py-2 text-right font-mono text-[10px] leading-6 text-muted-foreground">
+                <span v-for="(line, index) in visualLineNumbers" :key="`${index}-${line}`" class="block h-6 px-1">{{ line }}</span>
+              </div>
+              <textarea
+                ref="valueTextareaRef"
+                v-model="editingEnv.value"
+                rows="5"
+                placeholder="value"
+                class="max-h-40 min-h-16 w-full min-w-0 resize-none overflow-x-hidden bg-transparent pl-2 pr-3 py-2 font-mono text-sm leading-6 break-all whitespace-pre-wrap outline-none"
+                @scroll="syncValueLineNumbers"
+              />
+              <div aria-hidden="true" class="pointer-events-none absolute bottom-1.5 right-1.5 h-3.5 w-3.5 opacity-45">
+                <span class="absolute bottom-0 right-0 h-px w-3 rotate-[-45deg] bg-border" />
+                <span class="absolute bottom-1 right-0.5 h-px w-2 rotate-[-45deg] bg-border/80" />
+                <span class="absolute bottom-2 right-1 h-px w-1 rotate-[-45deg] bg-border/60" />
+              </div>
+            </div>
+            <div
+              ref="lineMeasureRef"
+              aria-hidden="true"
+              class="pointer-events-none invisible fixed left-0 top-0 -z-10 min-h-16 break-all whitespace-pre-wrap px-2 py-2 font-mono text-sm leading-6"
+            />
           </div>
-          <div class="space-y-2">
+          <div class="space-y-2 min-w-0">
             <Label>备注</Label>
-            <Textarea v-model="editingEnv.remark" class="resize-none" rows="3" placeholder="变量说明..." />
+            <Textarea v-model="editingEnv.remark" class="w-full min-w-0 resize-none break-all" rows="3" placeholder="变量说明..." />
           </div>
           <div class="flex items-center justify-between space-x-2 pt-2">
             <Label class="text-sm font-medium">隐藏变量值</Label>
