@@ -23,7 +23,12 @@ type RepoConfig struct {
 	Proxy      string `json:"proxy"`       // 代理类型: none, ghproxy, mirror, custom
 	ProxyURL   string `json:"proxy_url"`   // 自定义代理地址
 	AuthToken      string `json:"auth_token"`      // 认证 Token
-	WhitelistPaths string `json:"whitelist_paths"` // 同步时保留的路径（白名单路径），逗号分隔
+	WhitelistPaths string `json:"whitelist_paths"` // 同步时保留的路径及脚本筛选白名单关键词，逗号或竖线分割
+	Blacklist      string `json:"blacklist"`       // 脚本筛选黑名单关键词，竖线分割
+	Dependence     string `json:"dependence"`      // 脚本依赖文件关键词，竖线分割
+	Extensions     string `json:"extensions"`      // 脚本文件后缀关键词，竖线分割
+	AutoAddCron    bool   `json:"auto_add_cron"`   // 自动解析脚本注释添加定时任务
+	RepoSource     string `json:"repo_source"`     // 仓库来源，如果是选择了这个 ql 导入的仓库，= ql
 }
 
 // TaskConfig  任务配置  RepoConfig+TaskConfig=task.config
@@ -56,6 +61,8 @@ type Task struct {
 	RuntimeEnvs   []string            `json:"-" gorm:"-"`                  // 运行时环境变量（非持久化）
 	LastRun       *LocalTime          `json:"last_run"`
 	NextRun       *LocalTime          `json:"next_run"`
+	SourceID      string              `json:"source_id" gorm:"size:255;index"`            // 脚本资源唯一标识（路径 sanitized）
+	RepoTaskID    string              `json:"repo_task_id" gorm:"size:20;index"`          // 所属的仓库任务 ID
 	CreatedAt     LocalTime           `json:"created_at"`
 	UpdatedAt     LocalTime           `json:"updated_at"`
 	DeletedAt     gorm.DeletedAt      `json:"-" gorm:"index"`

@@ -1,7 +1,6 @@
 > 出于安全及环境隔离考虑，推荐使用 Docker/Compose 部署方式。[镜像地址](https://github.com/engigu/baihu-panel/pkgs/container/baihu)
 
 
-## 快速部署
 
 ### 🐳 方式一：Docker 部署（推荐）
 [部署文档](https://github.com/engigu/baihu-panel?tab=readme-ov-file#%E5%BF%AB%E9%80%9F%E9%83%A8%E7%BD%B2)

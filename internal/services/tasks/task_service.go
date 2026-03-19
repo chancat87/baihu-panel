@@ -13,7 +13,15 @@ func NewTaskService() *TaskService {
 	return &TaskService{}
 }
 
-func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages []map[string]string, triggerType string, tags string, retryCount int, retryInterval int, randomRange int) *models.Task {
+func (ts *TaskService) GetTaskBySourceID(sourceID string) *models.Task {
+	var task models.Task
+	if err := database.DB.Where("source_id = ?", sourceID).First(&task).Error; err != nil {
+		return nil
+	}
+	return &task
+}
+
+func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, workDir, cleanConfig, envs, taskType, config string, agentID *string, languages []map[string]string, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
 	if taskType == "" {
 		taskType = "task"
 	}
@@ -39,6 +47,7 @@ func (ts *TaskService) CreateTask(name, command, schedule string, timeout int, w
 		RetryCount:    retryCount,
 		RetryInterval: retryInterval,
 		RandomRange:   randomRange,
+		SourceID:      sourceID,
 		CreatedAt:     models.Now(),
 		UpdatedAt:     models.Now(),
 	}
@@ -88,7 +97,7 @@ func (ts *TaskService) GetTaskByID(id string) *models.Task {
 	return &task
 }
 
-func (ts *TaskService) UpdateTask(id string, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages []map[string]string, triggerType string, tags string, retryCount int, retryInterval int, randomRange int) *models.Task {
+func (ts *TaskService) UpdateTask(id string, name, command, schedule string, timeout int, workDir, cleanConfig, envs string, enabled bool, taskType, config string, agentID *string, languages []map[string]string, triggerType string, tags string, retryCount int, retryInterval int, randomRange int, sourceID string) *models.Task {
 	var task models.Task
 	if err := database.DB.Where("id = ?", id).First(&task).Error; err != nil {
 		return nil
@@ -114,12 +123,15 @@ func (ts *TaskService) UpdateTask(id string, name, command, schedule string, tim
 	if triggerType != "" {
 		task.TriggerType = triggerType
 	}
+	if sourceID != "" {
+		task.SourceID = sourceID
+	}
 
 	database.DB.Model(&task).Select(
 		"Name", "Command", "Tags", "Schedule", "Timeout", "WorkDir",
 		"CleanConfig", "Envs", "Enabled", "AgentID", "Languages",
 		"RetryCount", "RetryInterval", "RandomRange", "Type",
-		"TriggerType", "Config",
+		"TriggerType", "Config", "SourceID",
 	).Updates(&task)
 	return &task
 }
@@ -130,4 +142,12 @@ func (ts *TaskService) DeleteTask(id string) bool {
 	
 	result := database.DB.Unscoped().Where("id = ?", id).Delete(&models.Task{})
 	return result.RowsAffected > 0
+}
+
+func (ts *TaskService) BatchDeleteTasks(ids []string) int64 {
+	// 同时删除关联的通知推送设置
+	database.DB.Where("type = ? AND data_id IN ?", constant.BindingTypeTask, ids).Delete(&models.NotifyBinding{})
+	
+	result := database.DB.Unscoped().Where("id IN ?", ids).Delete(&models.Task{})
+	return result.RowsAffected
 }

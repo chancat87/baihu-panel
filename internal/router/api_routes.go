@@ -73,6 +73,8 @@ func registerTaskRoutes(g *gin.RouterGroup, c *Controllers) {
 		tasks.GET("/:id", c.Task.GetTask)
 		tasks.PUT("/:id", c.Task.UpdateTask)
 		tasks.DELETE("/:id", c.Task.DeleteTask)
+		tasks.POST("/batch-delete", c.Task.BatchDeleteTasks)
+		tasks.DELETE("/batch-by-query", c.Task.BatchDeleteByQuery)
 		tasks.POST("/stop/:logID", c.Task.StopTask)
 	}
 
@@ -153,6 +155,7 @@ func registerSettingsRoutes(g *gin.RouterGroup, c *Controllers) {
 		settings.GET("/scheduler", c.Settings.GetSchedulerSettings)
 		settings.PUT("/scheduler", c.Settings.UpdateSchedulerSettings)
 		settings.GET("/about", c.Settings.GetAbout)
+		settings.GET("/changelog", c.Settings.GetChangelog)
 		settings.GET("/loginlogs", c.Settings.GetLoginLogs)
 		settings.POST("/backup", c.Settings.CreateBackup)
 		settings.GET("/backup/status", c.Settings.GetBackupStatus)

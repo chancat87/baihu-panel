@@ -241,6 +241,10 @@ func (h *ServerSchedulerHandler) OnTaskCompleted(req *executor.ExecutionRequest,
 	// 处理任务完成（更新统计、清理旧日志等）
 	h.es.taskLogService.ProcessTaskCompletion(taskLog)
 
+	if task.Type == constant.TaskTypeRepo && result.Status == constant.TaskStatusSuccess {
+		go ParseRepoScriptsAndAddCron(h.es, task)
+	}
+
 	// 更新内存缓冲
 	h.es.UpdateResult(*result)
 
@@ -418,6 +422,10 @@ func (h *LocalTaskHooks) OnHeartbeat(ctx context.Context, logID string, duration
 // ExecuteDispatcher 实现任务分发逻辑
 func (es *ExecutorService) ExecuteDispatcher(ctx context.Context, req *executor.ExecutionRequest, stdout, stderr io.Writer) (*executor.Result, error) {
 	taskID := req.TaskID
+	
+	// 解析路径变量 (如 $SCRIPTS_DIR$)
+	req.Command = es.ResolvePath(req.Command)
+	req.WorkDir = es.ResolvePath(req.WorkDir)
 
 	task := es.taskService.GetTaskByID(taskID)
 	// 系统任务（无 taskID）直接本地执行
@@ -479,7 +487,7 @@ func (es *ExecutorService) Stop() {
 
 // StartCron 启动计划任务
 func (es *ExecutorService) StartCron() {
-	es.loadCronTasks()
+	go es.loadCronTasks()
 	es.cronManager.Start()
 	// logger.Info("[Executor] 计划任务管理器已启动")
 }
@@ -949,8 +957,24 @@ func (es *ExecutorService) BuildRepoCommand(task *models.Task) (string, string) 
 	if config.WhitelistPaths != "" {
 		args = append(args, "--whitelist-paths", config.WhitelistPaths)
 	}
+	if config.Blacklist != "" {
+		args = append(args, "--blacklist", config.Blacklist)
+	}
+	if config.Dependence != "" {
+		args = append(args, "--dependence", config.Dependence)
+	}
+	if config.Extensions != "" {
+		args = append(args, "--extensions", config.Extensions)
+	}
 
-	return exePath + " " + strings.Join(args, " "), filepath.Dir(exePath)
+	// 为了防止 shell 解释特殊字符（如 |），对每个参数进行转义/加引号
+	quotedArgs := make([]string, len(args))
+	for i, arg := range args {
+		// 使用单引号包裹参数，并转义已有的单引号
+		quotedArgs[i] = "'" + strings.ReplaceAll(arg, "'", "'\\''") + "'"
+	}
+
+	return "'" + strings.ReplaceAll(exePath, "'", "'\\''") + "' " + strings.Join(quotedArgs, " "), filepath.Dir(exePath)
 }
 
 // loadEnvVars 加载环境变量，支持全局注入及重名合并
@@ -980,4 +1004,9 @@ func (es *ExecutorService) loadEnvVars(taskID string, envIDs string) []string {
 	}
 
 	return nil
+}
+
+func (es *ExecutorService) ResolvePath(path string) string {
+	absScriptsDir, _ := filepath.Abs(constant.ScriptsWorkDir)
+	return strings.ReplaceAll(path, "$SCRIPTS_DIR$", absScriptsDir)
 }

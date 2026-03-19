@@ -71,6 +71,15 @@ export const api = {
     create: (data: Partial<Task>) => request<Task>('/tasks', { method: 'POST', body: JSON.stringify(data) }),
     update: (id: string, data: Partial<Task>) => request<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => request(`/tasks/${id}`, { method: 'DELETE' }),
+    batchDelete: (ids: string[]) => request<{ count: number }>('/tasks/batch-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+    batchDeleteByQuery: (params?: { name?: string, agent_id?: string, tags?: string, type?: string }) => {
+      const query = new URLSearchParams()
+      if (params?.name) query.append('name', params.name)
+      if (params?.agent_id) query.append('agent_id', params.agent_id)
+      if (params?.tags) query.append('tags', params.tags)
+      if (params?.type && params.type !== 'all') query.append('type', params.type)
+      return request<{ count: number }>(`/tasks/batch-by-query?${query.toString()}`, { method: 'DELETE' })
+    },
     execute: (id: string) => request<ExecutionResult>(`/execute/task/${id}`, { method: 'POST' }),
     stop: (logID: string) => request(`/tasks/stop/${logID}`, { method: 'POST' })
   },
@@ -138,6 +147,7 @@ export const api = {
       request('/settings/scheduler', { method: 'PUT', body: JSON.stringify(data) }),
     getPaths: () => request<{ scripts_dir: string }>('/settings/paths'),
     getAbout: () => request<AboutInfo>('/settings/about'),
+    getChangelog: () => request<string>('/settings/changelog'),
     get: (section: string, key: string) => request<string>(`/settings/${section}/${key}`),
     generateToken: (section: string, key: string) =>
       request<string>(`/settings/${section}/${key}/generate`, { method: 'POST' }),
@@ -352,7 +362,12 @@ export interface RepoConfig {
   proxy_url: string
   auth_token: string
   whitelist_paths?: string
+  blacklist?: string
+  dependence?: string
+  extensions?: string
+  auto_add_cron?: boolean
   concurrency?: number
+  repo_source?: string
 }
 
 export interface ExecutionResult {
@@ -439,6 +454,7 @@ export interface LogDetail {
 
 export interface AboutInfo {
   version: string
+  remote_version?: string
   build_time: string
   mem_usage: string
   goroutines: number
